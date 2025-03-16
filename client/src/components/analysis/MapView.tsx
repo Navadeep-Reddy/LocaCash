@@ -37,7 +37,7 @@ function LocationMarker({ onLocationSelect }: { onLocationSelect: (location: {la
 
 const MapView = ({ onLocationSelect, selectedLocation }: MapViewProps) => {
   const [isLoading, setIsLoading] = useState(false);
-  const defaultPosition: [number, number] = [40.7128, -74.0060]; // New York
+  const defaultPosition: [number, number] = [13.088675, 80.259795]; // Egmore
   
   const handleLocationSelect = (location: {lat: number, lng: number}) => {
     setIsLoading(true);
