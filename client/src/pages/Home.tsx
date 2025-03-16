@@ -10,7 +10,7 @@ const Home = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-muted">
         {/* Header Navigation */}
-        <NavBar activeTab={activeTab} setActiveTab={setActiveTab} />
+        <NavBar  />
 
         {/* Hero Section */}
         <section className="container mx-auto px-4 py-16 md:py-24 flex flex-col md:flex-row items-center gap-8">

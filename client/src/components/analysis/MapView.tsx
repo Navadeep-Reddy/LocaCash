@@ -1,69 +1,94 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { MapPin, Loader2 } from "lucide-react";
+import { MapContainer, TileLayer, Marker, useMapEvents } from "react-leaflet";
+import "leaflet/dist/leaflet.css";
+import L from "leaflet";
+
+// Fix for default marker icons in Leaflet
+import icon from "leaflet/dist/images/marker-icon.png";
+import iconShadow from "leaflet/dist/images/marker-shadow.png";
+
+// Create custom icon for markers
+const DefaultIcon = L.icon({
+  iconUrl: icon,
+  shadowUrl: iconShadow,
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+});
+
+// Set default icon for all markers
+L.Marker.prototype.options.icon = DefaultIcon;
 
 interface MapViewProps {
   onLocationSelect: (location: {lat: number, lng: number}) => void;
   selectedLocation: {lat: number, lng: number} | null;
 }
 
+// Component to handle map click events
+function LocationMarker({ onLocationSelect }: { onLocationSelect: (location: {lat: number, lng: number}) => void }) {
+  useMapEvents({
+    click(e) {
+      onLocationSelect({ lat: e.latlng.lat, lng: e.latlng.lng });
+    },
+  });
+  
+  return null;
+}
+
 const MapView = ({ onLocationSelect, selectedLocation }: MapViewProps) => {
   const [isLoading, setIsLoading] = useState(false);
+  const defaultPosition: [number, number] = [40.7128, -74.0060]; // New York
   
-  // In a real implementation, this would integrate with Google Maps API
-  const handleMapClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    // This is just a placeholder that simulates selecting a location
-    // In the real implementation, we'd get coordinates from the Google Maps click event
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    
-    // Convert pixel position to "fake" lat/lng for demonstration
-    const lat = 40.7128 - (y / rect.height) * 0.1;
-    const lng = -74.006 + (x / rect.width) * 0.1;
-    
+  const handleLocationSelect = (location: {lat: number, lng: number}) => {
     setIsLoading(true);
     
-    // Simulate API loading
+    // Simulate API loading (replace with actual API call if needed)
     setTimeout(() => {
-      onLocationSelect({ lat, lng });
+      onLocationSelect(location);
       setIsLoading(false);
     }, 500);
   };
   
   return (
     <div className="bg-muted rounded-lg border shadow-sm h-[600px] relative overflow-hidden">
-      {/* This would be replaced by an actual Google Maps component */}
-      <div 
-        className="w-full h-full bg-[url('https://images.unsplash.com/photo-1524661135-423995f22d0b?ixlib=rb-4.0.3')] bg-cover bg-center cursor-crosshair"
-        onClick={handleMapClick}
+      {/* Overlay instructions */}
+      <div className="absolute top-4 left-4 bg-background/80 backdrop-blur-sm p-3 rounded-lg shadow-sm border z-[1000]">
+        <p className="text-sm font-medium">Click on the map to select a location for analysis</p>
+      </div>
+      
+      {/* LeafletJS map */}
+      <MapContainer 
+        center={selectedLocation ? [selectedLocation.lat, selectedLocation.lng] : defaultPosition} 
+        zoom={13} 
+        style={{ height: "100%", width: "100%" }}
+        className="z-10"
       >
-        {/* Overlay instructions */}
-        <div className="absolute top-4 left-4 bg-background/80 backdrop-blur-sm p-3 rounded-lg shadow-sm border">
-          <p className="text-sm font-medium">Click on the map to select a location for analysis</p>
-        </div>
+        <TileLayer
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        />
+        
+        {/* Click handler */}
+        <LocationMarker onLocationSelect={handleLocationSelect} />
         
         {/* Display selected location */}
         {selectedLocation && (
-          <div 
-            className="absolute w-8 h-8 transform -translate-x-1/2 -translate-y-1/2"
-            style={{ 
-              left: `${((selectedLocation.lng + 74.006) / 0.1) * 100}%`, 
-              top: `${((40.7128 - selectedLocation.lat) / 0.1) * 100}%` 
-            }}
-          >
-            <MapPin className="w-8 h-8 text-primary animate-bounce" />
-          </div>
+          <Marker 
+            position={[selectedLocation.lat, selectedLocation.lng]}
+            icon={DefaultIcon}
+          />
         )}
-        
-        {/* Loading indicator */}
-        {isLoading && (
-          <div className="absolute inset-0 bg-background/20 backdrop-blur-sm flex items-center justify-center">
-            <Loader2 className="w-8 h-8 text-primary animate-spin" />
-          </div>
-        )}
-      </div>
+      </MapContainer>
       
-      <div className="absolute bottom-4 right-4 bg-background/80 backdrop-blur-sm p-2 rounded border text-xs">
+      {/* Loading indicator */}
+      {isLoading && (
+        <div className="absolute inset-0 bg-background/20 backdrop-blur-sm flex items-center justify-center z-[1001]">
+          <Loader2 className="w-8 h-8 text-primary animate-spin" />
+        </div>
+      )}
+      
+      {/* Coordinates display */}
+      <div className="absolute bottom-4 right-4 bg-background/80 backdrop-blur-sm p-2 rounded border text-xs z-[1000]">
         {selectedLocation ? (
           <span>Selected: {selectedLocation.lat.toFixed(4)}, {selectedLocation.lng.toFixed(4)}</span>
         ) : (
