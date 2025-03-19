@@ -1,7 +1,7 @@
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
-import { Users, Building, ShoppingBag, Car, Train, DollarSign, BarChart3 } from "lucide-react";
+import { Users, Building, ShoppingBag, Car, Train, DollarSign, BarChart3, Loader2, AlertCircle } from "lucide-react";
 
 interface FactorWeightsProps {
   weights: {
@@ -14,21 +14,19 @@ interface FactorWeightsProps {
   };
   onWeightChange: (factor: string, value: number) => void;
   onRunAnalysis: () => void;
+  isLoading?: boolean;
+  error?: string | null;
 }
 
-const FactorWeights = ({ weights, onWeightChange, onRunAnalysis }: FactorWeightsProps) => {
+const FactorWeights = ({ 
+  weights, 
+  onWeightChange, 
+  onRunAnalysis,
+  isLoading = false,
+  error = null
+}: FactorWeightsProps) => {
   
   const handleRunAnalysis = () => {
-    // Log all slider values to console
-    console.log("Analysis run with weights:", {
-      populationDensity: weights.populationDensity,
-      competingATMs: weights.competingATMs,
-      commercialActivity: weights.commercialActivity,
-      trafficFlow: weights.trafficFlow,
-      publicTransport: weights.publicTransport,
-      landRate: weights.landRate
-    });
-    
     // Call the parent component's handler
     onRunAnalysis();
   };
@@ -43,6 +41,7 @@ const FactorWeights = ({ weights, onWeightChange, onRunAnalysis }: FactorWeights
       </CardHeader>
       
       <CardContent className="space-y-6">
+        {/* All slider components remain the same */}
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -158,7 +157,6 @@ const FactorWeights = ({ weights, onWeightChange, onRunAnalysis }: FactorWeights
           </p>
         </div>
         
-        {/* New Land Rate Slider */}
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -170,7 +168,7 @@ const FactorWeights = ({ weights, onWeightChange, onRunAnalysis }: FactorWeights
             <span className="text-sm font-medium">{weights.landRate}%</span>
           </div>
           <Slider 
-            value={[weights.landRate || 15]} 
+            value={[weights.landRate]} 
             min={0} 
             max={100} 
             step={5}
@@ -181,15 +179,32 @@ const FactorWeights = ({ weights, onWeightChange, onRunAnalysis }: FactorWeights
             Property costs affect the long-term ROI of ATM placement.
           </p>
         </div>
+        
+        {error && (
+          <div className="text-red-500 text-sm border border-red-200 bg-red-50 p-2 rounded flex items-center gap-2">
+            <AlertCircle className="h-4 w-4" />
+            {error}
+          </div>
+        )}
       </CardContent>
       
       <CardFooter>
         <Button 
           className="w-full gap-2" 
           onClick={handleRunAnalysis}
+          disabled={isLoading}
         >
-          <BarChart3 className="h-4 w-4" />
-          Run Analysis
+          {isLoading ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Analyzing...
+            </>
+          ) : (
+            <>
+              <BarChart3 className="h-4 w-4" />
+              Run Analysis
+            </>
+          )}
         </Button>
       </CardFooter>
     </Card>

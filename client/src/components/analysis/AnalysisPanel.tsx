@@ -18,12 +18,14 @@ interface AnalysisPanelProps {
   selectedLocation: {lat: number, lng: number} | null;
   onStartAnalysis: () => void;
   analysisInProgress: boolean;
+  onLocationDataReceived: (data: AnalysisData) => void;
 }
 
 const AnalysisPanel = ({ 
   selectedLocation, 
   onStartAnalysis,
-  analysisInProgress 
+  analysisInProgress,
+  onLocationDataReceived 
 }: AnalysisPanelProps) => {
   const [analysisData, setAnalysisData] = useState<AnalysisData | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -58,6 +60,9 @@ const AnalysisPanel = ({
       clearInterval(progressInterval);
       setProgress(100);
       setAnalysisData(response.data);
+      
+      // Pass the data back to the parent component
+      onLocationDataReceived(response.data);
       
       // Reset progress after showing 100%
       setTimeout(() => {
