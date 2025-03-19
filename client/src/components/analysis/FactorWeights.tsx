@@ -1,6 +1,7 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Slider } from "@/components/ui/slider";
-import { Users, Building, ShoppingBag, Car, Train } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Users, Building, ShoppingBag, Car, Train, DollarSign, BarChart3 } from "lucide-react";
 
 interface FactorWeightsProps {
   weights: {
@@ -9,11 +10,29 @@ interface FactorWeightsProps {
     commercialActivity: number;
     trafficFlow: number;
     publicTransport: number;
+    landRate: number;
   };
   onWeightChange: (factor: string, value: number) => void;
+  onRunAnalysis: () => void;
 }
 
-const FactorWeights = ({ weights, onWeightChange }: FactorWeightsProps) => {
+const FactorWeights = ({ weights, onWeightChange, onRunAnalysis }: FactorWeightsProps) => {
+  
+  const handleRunAnalysis = () => {
+    // Log all slider values to console
+    console.log("Analysis run with weights:", {
+      populationDensity: weights.populationDensity,
+      competingATMs: weights.competingATMs,
+      commercialActivity: weights.commercialActivity,
+      trafficFlow: weights.trafficFlow,
+      publicTransport: weights.publicTransport,
+      landRate: weights.landRate
+    });
+    
+    // Call the parent component's handler
+    onRunAnalysis();
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -138,7 +157,41 @@ const FactorWeights = ({ weights, onWeightChange }: FactorWeightsProps) => {
             Proximity to bus stops, train stations, and other transit points.
           </p>
         </div>
+        
+        {/* New Land Rate Slider */}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="bg-emerald-100 dark:bg-emerald-900/30 p-1.5 rounded-full">
+                <DollarSign className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+              </div>
+              <span className="font-medium">Land Rate</span>
+            </div>
+            <span className="text-sm font-medium">{weights.landRate}%</span>
+          </div>
+          <Slider 
+            value={[weights.landRate || 15]} 
+            min={0} 
+            max={100} 
+            step={5}
+            onValueChange={(value) => onWeightChange('landRate', value[0])}
+            className="w-full" 
+          />
+          <p className="text-xs text-muted-foreground">
+            Property costs affect the long-term ROI of ATM placement.
+          </p>
+        </div>
       </CardContent>
+      
+      <CardFooter>
+        <Button 
+          className="w-full gap-2" 
+          onClick={handleRunAnalysis}
+        >
+          <BarChart3 className="h-4 w-4" />
+          Run Analysis
+        </Button>
+      </CardFooter>
     </Card>
   );
 };

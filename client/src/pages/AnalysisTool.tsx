@@ -7,10 +7,11 @@ import ResultsPanel from "@/components/analysis/ResultsPanel";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const AnalysisTool = () => {
-  const [activeTab, setActiveTab] = useState("analysis");
   const [analysisInProgress, setAnalysisInProgress] = useState(false);
   const [analysisComplete, setAnalysisComplete] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState<{lat: number, lng: number} | null>(null);
+  const [activeTab, setActiveTab] = useState("location");
+  const [analysisReady, setAnalysisReady] = useState(false);
   
   // Mock weights state for different factors
   const [weights, setWeights] = useState({
@@ -19,6 +20,7 @@ const AnalysisTool = () => {
     commercialActivity: 20,
     trafficFlow: 15,
     publicTransport: 10,
+    landRate: 15,
   });
 
   const handleStartAnalysis = () => {
@@ -36,6 +38,7 @@ const AnalysisTool = () => {
   const handleLocationSelect = (location: {lat: number, lng: number}) => {
     setSelectedLocation(location);
     setAnalysisComplete(false);
+    setAnalysisReady(false);
   };
 
   const handleWeightChange = (factor: string, value: number) => {
@@ -43,6 +46,14 @@ const AnalysisTool = () => {
       ...prev,
       [factor]: value
     }));
+    
+    // Reset analysis ready state when weights change
+    setAnalysisReady(false);
+  };
+  
+  const handleRunAnalysis = () => {
+    setAnalysisReady(true);
+    console.log("Analysis run with weights:", weights);
   };
 
   return (
@@ -61,11 +72,20 @@ const AnalysisTool = () => {
           </div>
           
           <div className="space-y-6">
-            <Tabs defaultValue="location" className="w-full">
+            <Tabs 
+              value={activeTab} 
+              onValueChange={setActiveTab} 
+              className="w-full"
+            >
               <TabsList className="grid grid-cols-3 mb-4">
                 <TabsTrigger value="location">Location</TabsTrigger>
                 <TabsTrigger value="factors">Factors</TabsTrigger>
-                <TabsTrigger value="results" disabled={!analysisComplete}>Results</TabsTrigger>
+                <TabsTrigger 
+                  value="results" 
+                  disabled={!analysisReady || !analysisComplete}
+                >
+                  Results
+                </TabsTrigger>
               </TabsList>
               
               <TabsContent value="location">
@@ -80,11 +100,12 @@ const AnalysisTool = () => {
                 <FactorWeights 
                   weights={weights}
                   onWeightChange={handleWeightChange}
+                  onRunAnalysis={handleRunAnalysis}
                 />
               </TabsContent>
               
               <TabsContent value="results">
-                {analysisComplete && (
+                {analysisComplete && analysisReady && (
                   <ResultsPanel 
                     selectedLocation={selectedLocation}
                     weights={weights}
