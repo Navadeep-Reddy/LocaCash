@@ -71,6 +71,7 @@ def calculate_location_data(lat, lng, radius=1500):
     land_rate = base_rate + (population_density * 200) + (commercial_activity * 100) + (traffic_flow * 50)
 
     result = {
+        "coords": [lat, lng],
         "population_density": population_density,
         "competing_atms": competing_atms,
         #"atm_locations": atm_locations,
