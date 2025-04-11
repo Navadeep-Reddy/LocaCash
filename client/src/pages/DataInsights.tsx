@@ -283,7 +283,7 @@ const DataInsights = () => {
                         <div>
                           <CardTitle className="flex items-center gap-2">
                             <MapPin className="h-5 w-5 text-primary" />
-                            Coordinates
+                            {location.id}
                           </CardTitle>
                           <CardDescription>
                             {location.location.lat.toFixed(6)}, {location.location.lng.toFixed(6)}
