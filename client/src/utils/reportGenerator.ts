@@ -27,6 +27,19 @@ interface OptimizationResult {
   usedBudget: number;
 }
 
+// Define monochrome color palette
+const colors = {
+  primary: [50, 50, 50],       // Dark gray for main headings
+  secondary: [80, 80, 80],     // Medium gray for subheadings
+  tertiary: [120, 120, 120],   // Light gray for less important text
+  tableHeader: [40, 40, 40],   // Dark gray for table headers
+  tableBg1: [245, 245, 245],   // Very light gray for table rows (odd)
+  tableBg2: [255, 255, 255],   // White for table rows (even)
+  highlight: [0, 0, 0],        // Black for highlighted text
+  subtle: [180, 180, 180],     // Very light gray for subtle elements
+  border: [200, 200, 200]      // Light gray for borders
+};
+
 // Modified currency formatter that uses "RS" instead of ₹
 const formatCurrency = (value: number): string => {
   // Format with commas manually
@@ -69,31 +82,31 @@ export const generateInvestmentReport = (
     
     // Add the header with logo (coordinates, title, styling)
     doc.setFontSize(22);
-    doc.setTextColor(33, 99, 232); // Primary blue color
+    doc.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]); // Primary dark gray
     doc.text('LocaCash', 105, 15, { align: 'center' });
     
     doc.setFontSize(16);
-    doc.setTextColor(100, 100, 100);
+    doc.setTextColor(colors.secondary[0], colors.secondary[1], colors.secondary[2]); // Secondary medium gray
     doc.text('ATM Investment Portfolio Report', 105, 25, { align: 'center' });
     
     // Add report generation details
     doc.setFontSize(10);
-    doc.setTextColor(120, 120, 120);
+    doc.setTextColor(colors.tertiary[0], colors.tertiary[1], colors.tertiary[2]); // Tertiary light gray
     const today = new Date();
     doc.text(`Generated on: ${today.toLocaleDateString()} at ${today.toLocaleTimeString()}`, 105, 32, { align: 'center' });
     doc.text(`Prepared for: ${userName}`, 105, 37, { align: 'center' });
     
     // Horizontal line
-    doc.setDrawColor(200, 200, 200);
+    doc.setDrawColor(colors.border[0], colors.border[1], colors.border[2]); // Border light gray
     doc.line(20, 42, 190, 42);
     
     // Executive Summary
     doc.setFontSize(14);
-    doc.setTextColor(60, 60, 60);
+    doc.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]); // Primary dark gray
     doc.text('Executive Summary', 20, 50);
     
     doc.setFontSize(11);
-    doc.setTextColor(80, 80, 80);
+    doc.setTextColor(colors.secondary[0], colors.secondary[1], colors.secondary[2]); // Secondary medium gray
     const summaryText = [
       `This report presents an optimized ATM deployment portfolio consisting of ${selectedLocations.length} locations,`,
       `selected from the available analysis pool using our proprietary knapsack optimization algorithm.`,
@@ -110,7 +123,7 @@ export const generateInvestmentReport = (
     // Portfolio Highlights
     yPos += 5;
     doc.setFontSize(14);
-    doc.setTextColor(60, 60, 60);
+    doc.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]); // Primary dark gray
     doc.text('Portfolio Highlights', 20, yPos);
     yPos += 10;
     
@@ -124,16 +137,26 @@ export const generateInvestmentReport = (
       ['Remaining Budget:', formatCurrency(totalBudget - usedBudget)]
     ];
     
-    // Use autoTable directly
+    // Use autoTable directly with monochrome styling
     autoTable(doc, {
       startY: yPos,
       head: [],
       body: highlightsData,
       theme: 'plain',
-      styles: { fontSize: 11 },
+      styles: { 
+        fontSize: 11,
+        textColor: [60, 60, 60] 
+      },
       columnStyles: {
-        0: { fontStyle: 'bold', cellWidth: 60 },
-        1: { cellWidth: 60 }
+        0: { 
+          fontStyle: 'bold', 
+          cellWidth: 60,
+          textColor: [40, 40, 40] // Slightly darker for labels
+        },
+        1: { 
+          cellWidth: 60,
+          textColor: [60, 60, 60] // Standard text color for values
+        }
       },
       margin: { left: 20 }
     });
@@ -141,7 +164,7 @@ export const generateInvestmentReport = (
     // Selected Locations Table
     yPos = (doc as any).lastAutoTable.finalY + 15;
     doc.setFontSize(14);
-    doc.setTextColor(60, 60, 60);
+    doc.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]); // Primary dark gray
     doc.text('Selected ATM Locations', 20, yPos);
     
     // Create location table data
@@ -159,16 +182,22 @@ export const generateInvestmentReport = (
       location.metrics.commercialActivity
     ]);
     
-    // Use autoTable directly with increased column width for Land Rate
+    // Use autoTable directly with increased column width for Land Rate and monochrome styling
     autoTable(doc, {
       startY: yPos + 5,
       head: locationTableHead,
       body: locationTableBody,
-      theme: 'striped',
+      theme: 'grid', // Changed from striped to grid for clearer monochrome layout
       headStyles: {
-        fillColor: [33, 99, 232],
+        fillColor: colors.tableHeader, // Dark gray for header
         textColor: [255, 255, 255],
         fontStyle: 'bold'
+      },
+      alternateRowStyles: {
+        fillColor: colors.tableBg1 // Very light gray for alternate rows
+      },
+      bodyStyles: {
+        fillColor: colors.tableBg2 // White for standard rows
       },
       columnStyles: {
         0: { cellWidth: 10 },  // # column
@@ -197,12 +226,12 @@ export const generateInvestmentReport = (
     
     // Recommendations
     doc.setFontSize(14);
-    doc.setTextColor(60, 60, 60);
+    doc.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]); // Primary dark gray
     doc.text('Implementation Recommendations', 20, yPos);
     yPos += 10;
     
     doc.setFontSize(11);
-    doc.setTextColor(80, 80, 80);
+    doc.setTextColor(colors.secondary[0], colors.secondary[1], colors.secondary[2]); // Secondary medium gray
     const recommendationsText = [
       '1. Prioritize implementation of locations with the highest efficiency scores first to maximize',
       '   early returns on investment.',
@@ -222,7 +251,7 @@ export const generateInvestmentReport = (
     for (let i = 1; i <= pageCount; i++) {
       doc.setPage(i);
       doc.setFontSize(10);
-      doc.setTextColor(150, 150, 150);
+      doc.setTextColor(colors.subtle[0], colors.subtle[1], colors.subtle[2]); // Very light gray for footer
       doc.text(
         `Page ${i} of ${pageCount} | LocaCash ATM Optimization System | CONFIDENTIAL`,
         105,

@@ -342,9 +342,6 @@ const AnalysisTool = () => {
               </TabsContent>
             </Tabs>
             <div className="mt-4">
-              <Button onClick={saveTestAnalysis} variant="outline" size="sm">
-                Test Save
-              </Button>
             </div>
           </div>
         </div>
