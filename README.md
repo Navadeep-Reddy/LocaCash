@@ -73,9 +73,6 @@ LocaCash implements a specialized B+ tree structure for efficient spatial data s
 
 - **Geohash-Based Indexing**: Locations are indexed using geohash prefixes for efficient spatial lookups
 - **Optimized I/O Operations**: Minimizes API calls by storing frequently accessed location data
-- **LRU Cache Eviction Policy**: Intelligently manages memory usage based on access patterns
-- **Disk Persistence**: Cached data is periodically saved to disk to maintain performance across restarts
-- **Cache Invalidation**: Time-based invalidation ensures data freshness while maximizing performance
 
 This implementation provides:
 - 95% reduction in API calls for previously analyzed locations
