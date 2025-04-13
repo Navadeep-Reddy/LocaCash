@@ -16,6 +16,18 @@ class BPlusTree:
         self._hit_count = 0
         self._miss_count = 0
 
+    def key_match(self, key1, key2):
+        """Check if two keys match, accounting for floating point precision issues"""
+        if len(key1) != len(key2):
+            return False
+        
+        # Compare with a small epsilon for floating point precision
+        epsilon = 1e-6
+        for i in range(len(key1)):
+            if abs(key1[i] - key2[i]) > epsilon:
+                return False
+        return True
+
     def insert(self, key, value):
         if not self.root:
             self.root = BPlusTreeNode(leaf=True)
@@ -43,13 +55,20 @@ class BPlusTree:
             self._miss_count += 1
             return None
             
+        # Format key exactly the same way as in insert method
         key = tuple(round(float(k), 4) for k in key)
         node = self.root
         
+        # Log all keys for debugging
+        logger = logging.getLogger(__name__)
+        logger.info(f"Searching for key: {key}")
+        logger.info(f"Available keys: {self.root.keys}")
+        
         # Track cache hits/misses
         for i, k in enumerate(node.keys):
-            if k == key:
+            if self.key_match(k, key):  # Use custom key comparison
                 self._hit_count += 1
+                logger.info(f"EXACT MATCH FOUND: {k} ≈ {key}")
                 return node.children[i]
         
         self._miss_count += 1

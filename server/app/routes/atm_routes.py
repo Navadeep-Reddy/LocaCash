@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify
 from app.utils import factors
-from app.utils.bptree import bptree
+from app.utils.bptree import bptree, BPlusTree
 from app.utils.score import calculate_scores
 from app.services.supabase_service import supabase
 import time
@@ -74,6 +74,11 @@ def init_cache_from_database():
 # Initialize the cache when this module is imported
 cache_size = init_cache_from_database()
 
+def normalize_coordinates(coords):
+    """Normalize coordinates to ensure consistent formatting across operations"""
+    # Always use the same rounding precision as in BPlusTree insert/search
+    return tuple(round(float(x), 4) for x in coords)
+
 @atm_bp.route('/fetch_details', methods=['POST'])
 def get_data():
     data = request.get_json()
@@ -82,21 +87,30 @@ def get_data():
     if not location or len(location) != 2:
         return jsonify({"error": "Invalid location input"}), 400
 
-    # Round coordinates to 3 decimals and remove trailing zeros
-    coords = tuple(round(float(x), 3) for x in location)
-
+    # Normalize coordinates using the helper function
+    coords = normalize_coordinates(location)
+    
+    # Log the original and normalized coordinates
+    logger.info(f"Original coordinates: {location}")
+    logger.info(f"Normalized coordinates: {coords}")
+    
     # Check if already in B+ Tree
     result = bptree.search(coords)
     if result is not None:
-        # Enhanced detailed cache hit logging
+        # Enhanced detailed cache hit logging with B+ Tree usage indicator
         hit_source = result.get('cache_source', 'unknown')
         hit_time = result.get('timestamp', 'N/A')
-        logger.info(f"🚀 CACHE HIT: Coordinates {coords} found in B+ tree cache")
+        
+        # Print B+ Tree cache hit message
+        logger.info("=" * 60)
+        logger.info(f"🔍 B+ TREE CACHE HIT 🔍")
+        logger.info(f"🚀 Coordinates {coords} found in B+ tree cache")
         logger.info(f"  └─ Source: {hit_source}")
         logger.info(f"  └─ Original timestamp: {hit_time}")
         logger.info(f"  └─ Data: Population Density={result.get('population_density')}, " +
                    f"Competing ATMs={result.get('competing_atms')}, " +
                    f"Commercial Activity={result.get('commercial_activity')}")
+        logger.info("=" * 60)
         
         # Update hit counter for statistics
         bptree._hit_count += 1
@@ -104,23 +118,74 @@ def get_data():
         # Add hit metadata
         result["cache_hit"] = True
         result["cache_accessed_at"] = time.time()
+        result["cache_mechanism"] = "B+ Tree"
         return jsonify(result)
 
+    # If we get here, we need to check for similar coordinates
+    # Find closest matches within a small radius
+    close_matches = []
+    closest_match = None
+    min_distance = float('inf')
+    
+    if bptree.root and bptree.root.keys:
+        for k in bptree.root.keys:
+            # Calculate distance between points
+            dist = ((k[0] - coords[0])**2 + (k[1] - coords[1])**2)**0.5
+            
+            # If within 10 meters (approximately 0.0001 degrees)
+            if dist < 0.0001:
+                close_matches.append((k, dist))
+                
+                # Track the closest match
+                if dist < min_distance:
+                    min_distance = dist
+                    closest_match = k
+        
+        # Use the closest match if found
+        if closest_match:
+            result = bptree.search(closest_match)
+            if result:
+                logger.info("=" * 60)
+                logger.info(f"📍 B+ TREE PROXIMITY MATCH 📍")
+                logger.info(f"📡 Found nearby location in cache: {closest_match}")
+                logger.info(f"  └─ Distance: {min_distance * 111000:.2f} meters (approx)")
+                logger.info(f"  └─ Original request: {coords}")
+                logger.info(f"  └─ Source: {result.get('cache_source', 'unknown')}")
+                logger.info("=" * 60)
+                
+                # Update hit counter for statistics
+                bptree._hit_count += 1
+                
+                # Add hit metadata
+                result["cache_hit"] = True
+                result["original_request"] = coords
+                result["matched_coords"] = closest_match
+                result["distance_meters"] = min_distance * 111000  # Rough conversion to meters
+                result["cache_accessed_at"] = time.time()
+                result["cache_mechanism"] = "B+ Tree Proximity Match"
+                return jsonify(result)
+
     try:
-        # Log cache miss
-        logger.info(f"❌ CACHE MISS: Coordinates {coords} not in cache, fetching from API")
+        # Log cache miss with B+ Tree indicator
+        logger.info("=" * 60)
+        logger.info(f"❌ B+ TREE CACHE MISS ❌")
+        logger.info(f"⚡ Coordinates {coords} not in cache, fetching from API")
+        logger.info("=" * 60)
+        
         bptree._miss_count += 1
         
         # Fetch from Overpass API
         result = factors.calculate_location_data(coords[0], coords[1])
+        
         # Add miss metadata
         result["cache_hit"] = False
         result["cache_source"] = "api"
         result["timestamp"] = time.time()
+        result["cache_mechanism"] = "API Direct"
         
         # Insert into cache
         bptree.insert(coords, result)
-        logger.info(f"➕ Added new location to cache: {coords}")
+        logger.info(f"➕ Added new location to B+ Tree cache: {coords}")
         
         return jsonify(result)
     except Exception as e:
@@ -178,4 +243,74 @@ def cache_contents():
                 "stats": cache_status().get_json()
             })
     except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+@atm_bp.route('/debug-key', methods=['POST'])
+def debug_key():
+    """Debug a specific key to see if it exists in the cache"""
+    data = request.get_json()
+    location = data.get('Location')
+
+    if not location or len(location) != 2:
+        return jsonify({"error": "Invalid location input"}), 400
+
+    # Format the key in different ways to check
+    raw_coords = tuple(location)
+    rounded_3 = tuple(round(float(x), 3) for x in location)
+    rounded_4 = tuple(round(float(x), 4) for x in location)
+    rounded_6 = tuple(round(float(x), 6) for x in location)
+    
+    # Check if any key format exists in tree
+    results = {
+        "raw": str(raw_coords) in str(bptree.root.keys),
+        "rounded_3": str(rounded_3) in str(bptree.root.keys),
+        "rounded_4": str(rounded_4) in str(bptree.root.keys),
+        "rounded_6": str(rounded_6) in str(bptree.root.keys),
+        "exact_match": False,
+        "closest_keys": [],
+    }
+    
+    # Check for direct equality with each key
+    for k in bptree.root.keys:
+        if k == rounded_4:
+            results["exact_match"] = True
+        
+        # Find closest keys
+        if abs(k[0] - rounded_4[0]) < 0.01 and abs(k[1] - rounded_4[1]) < 0.01:
+            results["closest_keys"].append(str(k))
+    
+    return jsonify({
+        "search_key": {
+            "raw": raw_coords,
+            "rounded_3": rounded_3,
+            "rounded_4": rounded_4,
+            "rounded_6": rounded_6
+        },
+        "results": results,
+        "cache_keys_sample": [str(k) for k in bptree.root.keys[:10]],
+        "total_keys": len(bptree.root.keys)
+    })
+
+@atm_bp.route('/reinitialize-cache', methods=['POST'])
+def reinitialize_cache():
+    """Force reinitialization of the cache"""
+    try:
+        # Clear existing cache
+        global bptree
+        bptree = BPlusTree()  # Create a new instance
+        
+        # Reinitialize
+        global cache_size
+        cache_size = init_cache_from_database()
+        
+        return jsonify({
+            "success": True,
+            "message": f"Cache reinitialized with {cache_size} entries",
+            "stats": {
+                "total_cached_locations": bptree.size(),
+                "hit_ratio": bptree.get_hit_ratio()
+            }
+        })
+    except Exception as e:
+        logger.error(f"Failed to reinitialize cache: {str(e)}")
         return jsonify({"success": False, "error": str(e)}), 500
