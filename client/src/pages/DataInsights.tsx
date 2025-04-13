@@ -39,6 +39,9 @@ import {
   Train,
   X
 } from "lucide-react";
+// Import the report generator
+import { generateInvestmentReport } from "@/utils/reportGenerator";
+import { useAuth } from "@/context/AuthContext"; // Update this import to use useAuth
 
 // Define types for our ATM locations
 interface ATMLocation {
@@ -179,6 +182,8 @@ const formatTooltipValue = (value: number, name: string) => {
 };
 
 const DataInsights = () => {
+  const { user } = useAuth(); // Replace useUserProfile with useAuth
+  
   const [locations, setLocations] = useState<ATMLocation[]>([]);
   const [budget, setBudget] = useState<number>(200000);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -190,6 +195,7 @@ const DataInsights = () => {
   } | null>(null);
   const [activeTab, setActiveTab] = useState<string>("locations");
   const [error, setError] = useState<string | null>(null);
+  const [isGeneratingReport, setIsGeneratingReport] = useState<boolean>(false);
   
   // Load ATM locations when component mounts
   useEffect(() => {
@@ -254,6 +260,40 @@ const DataInsights = () => {
     }, 1500);
   };
   
+  const handleGenerateReport = () => {
+    if (!optimizedResult) return;
+    
+    setIsGeneratingReport(true);
+    
+    try {
+      // Use the user information from AuthContext
+      const userName = user?.user_metadata?.full_name || 
+                       user?.email?.split('@')[0] || 
+                       "LocaCash User";
+      
+      // Generate report with the user's name
+      generateInvestmentReport(
+        optimizedResult, 
+        budget, 
+        userName
+      );
+      
+      toast({
+        title: "Report Generated",
+        description: "Your investment portfolio report has been downloaded.",
+      });
+    } catch (error) {
+      console.error("Error generating report:", error);
+      toast({
+        title: "Report Generation Failed",
+        description: "There was an error generating your report. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsGeneratingReport(false);
+    }
+  };
+
   // Format currency in Rupees
   const formatCurrency = (value: number): string => {
     return new Intl.NumberFormat('en-IN', {
@@ -759,9 +799,22 @@ const DataInsights = () => {
                     </div>
                   </CardContent>
                   <CardFooter>
-                    <Button className="w-full gap-2">
-                      <DollarSign className="h-4 w-4" />
-                      Generate Investment Report
+                    <Button 
+                      className="w-full gap-2" 
+                      onClick={handleGenerateReport}
+                      disabled={isGeneratingReport}
+                    >
+                      {isGeneratingReport ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          Generating Report...
+                        </>
+                      ) : (
+                        <>
+                          <DollarSign className="h-4 w-4" />
+                          Generate Investment Report
+                        </>
+                      )}
                     </Button>
                   </CardFooter>
                 </Card>
