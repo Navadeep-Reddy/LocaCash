@@ -61,7 +61,7 @@ const Home = () => {
                     2000
                   ]}
                   wrapper="span"
-                  speed={50}
+                  speed={30}
                   repeat={Infinity}
                 />
               </h1>
