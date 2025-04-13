@@ -1,6 +1,6 @@
 import NavBar from "@/components/NavBar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { MapPin, Users, Database, Cpu, Clock, Shield } from "lucide-react";
+import { MapPin, Users, Database, Cpu, Clock, Shield, Code, Server, Cloud } from "lucide-react";
 
 const About = () => {
   return (
@@ -24,7 +24,7 @@ const About = () => {
                   the most strategic locations for ATM deployment.
                 </p>
                 <p className="mt-4">
-                  By leveraging cutting-edge AI algorithms and comprehensive data sources, we empower 
+                  By leveraging cutting-edge algorithms and comprehensive data sources, we empower 
                   banks and financial institutions to make informed decisions that maximize ROI,
                   enhance customer accessibility, and strengthen market presence.
                 </p>
@@ -46,8 +46,9 @@ const About = () => {
                     <div>
                       <h3 className="font-medium">Location Analysis</h3>
                       <p className="text-muted-foreground text-sm mt-1">
-                        Our system analyzes potential locations using Google Maps API and 
-                        proprietary geospatial algorithms to evaluate accessibility factors.
+                        Our system analyzes potential locations using geospatial data and 
+                        proprietary algorithms to evaluate accessibility factors. Users can select 
+                        any location on the interactive map for detailed analysis.
                       </p>
                     </div>
                   </div>
@@ -61,8 +62,8 @@ const About = () => {
                     <div>
                       <h3 className="font-medium">Demographic Evaluation</h3>
                       <p className="text-muted-foreground text-sm mt-1">
-                        We incorporate population density, income levels, and age distribution 
-                        to predict ATM usage patterns in different areas.
+                        We incorporate population density metrics to help predict ATM usage patterns
+                        in different areas, ensuring optimal placement in high-traffic locations.
                       </p>
                     </div>
                   </div>
@@ -89,10 +90,64 @@ const About = () => {
                       </div>
                     </div>
                     <div>
-                      <h3 className="font-medium">AI-Powered Recommendations</h3>
+                      <h3 className="font-medium">Portfolio Optimization</h3>
                       <p className="text-muted-foreground text-sm mt-1">
-                        Machine learning algorithms process all data points to provide 
-                        actionable recommendations with predicted ROI metrics.
+                        Our knapsack algorithm optimizes ATM deployment within budget constraints,
+                        maximizing the total viability score while prioritizing cost-effective locations.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Technology Stack</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-6">
+                  <div className="flex gap-4">
+                    <div className="flex-shrink-0">
+                      <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                        <Code className="h-5 w-5 text-primary" />
+                      </div>
+                    </div>
+                    <div>
+                      <h3 className="font-medium">Frontend</h3>
+                      <p className="text-muted-foreground text-sm mt-1">
+                        Built with React, TypeScript, and Tailwind CSS with the Shadcn UI component library.
+                        Interactive maps powered by Leaflet for location selection. Framer Motion for smooth animations.
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex gap-4">
+                    <div className="flex-shrink-0">
+                      <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                        <Server className="h-5 w-5 text-primary" />
+                      </div>
+                    </div>
+                    <div>
+                      <h3 className="font-medium">Backend</h3>
+                      <p className="text-muted-foreground text-sm mt-1">
+                        Python Flask API handles location analysis and scoring calculations.
+                        RESTful architecture ensures clean separation between frontend and backend services.
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex gap-4">
+                    <div className="flex-shrink-0">
+                      <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                        <Cloud className="h-5 w-5 text-primary" />
+                      </div>
+                    </div>
+                    <div>
+                      <h3 className="font-medium">Database & Authentication</h3>
+                      <p className="text-muted-foreground text-sm mt-1">
+                        Supabase powers our user authentication system and PostgreSQL database, 
+                        storing analysis history and user preferences securely with Row Level Security.
                       </p>
                     </div>
                   </div>
@@ -112,9 +167,9 @@ const About = () => {
                     <MapPin className="h-4 w-4 text-primary" />
                   </div>
                   <div>
-                    <h3 className="font-medium text-sm">Location Intelligence</h3>
+                    <h3 className="font-medium text-sm">Interactive Analysis</h3>
                     <p className="text-xs text-muted-foreground">
-                      Advanced geospatial analysis of potential ATM locations
+                      Select any location on the map for detailed viability analysis
                     </p>
                   </div>
                 </div>
@@ -124,9 +179,21 @@ const About = () => {
                     <Users className="h-4 w-4 text-primary" />
                   </div>
                   <div>
-                    <h3 className="font-medium text-sm">Demographic Insights</h3>
+                    <h3 className="font-medium text-sm">Multi-Factor Scoring</h3>
                     <p className="text-xs text-muted-foreground">
-                      Population data analysis for targeted deployment
+                      Comprehensive analysis of 6 key location factors
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-3">
+                  <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                    <Database className="h-4 w-4 text-primary" />
+                  </div>
+                  <div>
+                    <h3 className="font-medium text-sm">Analysis History</h3>
+                    <p className="text-xs text-muted-foreground">
+                      Save and retrieve previous location analyses
                     </p>
                   </div>
                 </div>
@@ -136,9 +203,9 @@ const About = () => {
                     <Clock className="h-4 w-4 text-primary" />
                   </div>
                   <div>
-                    <h3 className="font-medium text-sm">Real-time Analysis</h3>
+                    <h3 className="font-medium text-sm">Budget Optimization</h3>
                     <p className="text-xs text-muted-foreground">
-                      Up-to-date processing of location data
+                      Maximize ATM network effectiveness within budget constraints
                     </p>
                   </div>
                 </div>
@@ -148,12 +215,63 @@ const About = () => {
                     <Shield className="h-4 w-4 text-primary" />
                   </div>
                   <div>
-                    <h3 className="font-medium text-sm">Secure & Compliant</h3>
+                    <h3 className="font-medium text-sm">Secure Account System</h3>
                     <p className="text-xs text-muted-foreground">
-                      Fully secure platform with regulatory compliance
+                      Email and Google OAuth authentication with Supabase
                     </p>
                   </div>
                 </div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader>
+                <CardTitle>Analysis Factors</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  Our ATM viability score is calculated using these key factors, 
+                  each with customizable weights:
+                </p>
+                
+                <ul className="space-y-2 text-sm">
+                  <li className="flex items-center gap-2">
+                    <div className="h-4 w-4 bg-blue-100 rounded-full flex items-center justify-center">
+                      <div className="h-2 w-2 bg-blue-500 rounded-full"></div>
+                    </div>
+                    <span>Population Density</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <div className="h-4 w-4 bg-red-100 rounded-full flex items-center justify-center">
+                      <div className="h-2 w-2 bg-red-500 rounded-full"></div>
+                    </div>
+                    <span>Competing ATMs</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <div className="h-4 w-4 bg-green-100 rounded-full flex items-center justify-center">
+                      <div className="h-2 w-2 bg-green-500 rounded-full"></div>
+                    </div>
+                    <span>Commercial Activity</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <div className="h-4 w-4 bg-amber-100 rounded-full flex items-center justify-center">
+                      <div className="h-2 w-2 bg-amber-500 rounded-full"></div>
+                    </div>
+                    <span>Traffic Flow</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <div className="h-4 w-4 bg-indigo-100 rounded-full flex items-center justify-center">
+                      <div className="h-2 w-2 bg-indigo-500 rounded-full"></div>
+                    </div>
+                    <span>Public Transport</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <div className="h-4 w-4 bg-emerald-100 rounded-full flex items-center justify-center">
+                      <div className="h-2 w-2 bg-emerald-500 rounded-full"></div>
+                    </div>
+                    <span>Land Rate</span>
+                  </li>
+                </ul>
               </CardContent>
             </Card>
             
@@ -180,4 +298,4 @@ const About = () => {
   )
 }
 
-export default About
+export default About;

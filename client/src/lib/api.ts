@@ -101,6 +101,15 @@ export const ATMAnalysisAPI = {
     });
     
     return data.success || false;
+  },
+
+  // Get user's ATM analyses for data insights
+  getDataInsights: async (): Promise<any[]> => {
+    const userId = await getUserId();
+    if (!userId) throw new Error('User not authenticated');
+    
+    const { data } = await api.get(`/analysis/v1/user-analyses/${userId}`);
+    return data.data || [];
   }
 };
 

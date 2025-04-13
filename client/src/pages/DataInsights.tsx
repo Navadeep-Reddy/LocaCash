@@ -6,6 +6,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Progress } from "@/components/ui/progress";
+import { supabase } from "@/lib/supabaseClient";
+import { toast } from "@/hooks/use-toast";
 import { 
   MapPin, 
   DollarSign, 
@@ -25,6 +27,7 @@ import {
 // Define types for our ATM locations
 interface ATMLocation {
   id: string;
+  number: number; // Auto-numbered by backend
   location: {
     lat: number;
     lng: number;
@@ -39,6 +42,8 @@ interface ATMLocation {
     publicTransport: number;
   };
   isSelected: boolean;
+  created_at?: string;
+  is_favorite?: boolean;
 }
 
 // Knapsack algorithm implementation
@@ -78,67 +83,29 @@ const formatLocationName = (lat: number, lng: number): string => {
   return `${direction.lat}${direction.lng} Location (${lat.toFixed(4)}, ${lng.toFixed(4)})`;
 };
 
-// Simulated API call to get ATM locations
+// Fetch ATM locations from Flask API
 const fetchAtmLocations = async (): Promise<ATMLocation[]> => {
-  // In a real implementation, this would fetch from your backend
-  // For now, we're generating sample data
+  // Get the current user ID from Supabase
+  const { data } = await supabase.auth.getSession();
+  const userId = data.session?.user?.id;
   
-  // Sample coordinates around Chennai
-  const coordinates = [
-    [13.083961, 80.241677],
-    [13.063254, 80.255427],
-    [13.052614, 80.218123],
-    [13.102874, 80.265187],
-    [13.041523, 80.232568],
-    [13.071345, 80.198762],
-    [13.095672, 80.221453],
-    [13.023458, 80.243789],
-    [13.112567, 80.187654],
-    [13.062819, 80.273456]
-  ];
-  
-  // Simulate fetching location data for each coordinate
-  const locations: ATMLocation[] = [];
-  
-  for (let i = 0; i < coordinates.length; i++) {
-    const [lat, lng] = coordinates[i];
-    
-    try {
-      // In a real implementation, fetch data from your backend API
-      // const response = await axios.post('http://localhost:8080/atm/v1/fetch_details', {
-      //   Location: [lat, lng]
-      // });
-      // const locationData = response.data;
-      
-      // For now, simulate API response
-      const score = 70 + Math.floor(Math.random() * 30);
-      const landRate = 40000 + Math.floor(Math.random() * 60000);
-      const populationDensity = 10 + Math.random() * 20;
-      const competingATMs = Math.floor(Math.random() * 4);
-      const commercialActivity = 5 + Math.floor(Math.random() * 30);
-      const trafficFlow = 500 + Math.floor(Math.random() * 1700);
-      const publicTransport = 5 + Math.floor(Math.random() * 40);
-      
-      locations.push({
-        id: `atm-${i + 1}`,
-        location: { lat, lng },
-        metrics: {
-          score,
-          landRate,
-          populationDensity,
-          competingATMs,
-          commercialActivity,
-          trafficFlow,
-          publicTransport
-        },
-        isSelected: false
-      });
-    } catch (error) {
-      console.error(`Error fetching data for location ${lat}, ${lng}:`, error);
-    }
+  if (!userId) {
+    throw new Error("User not authenticated");
   }
   
-  return locations;
+  try {
+    // Fetch from your Flask backend
+    const response = await axios.get(`http://localhost:8080/analysis/v1/user-analyses/${userId}`);
+    
+    if (response.data.success) {
+      return response.data.data;
+    } else {
+      throw new Error(response.data.error || "Failed to fetch ATM locations");
+    }
+  } catch (error) {
+    console.error("Error fetching ATM locations:", error);
+    throw error;
+  }
 };
 
 const DataInsights = () => {
@@ -156,23 +123,41 @@ const DataInsights = () => {
   
   // Load ATM locations when component mounts
   useEffect(() => {
-    const loadLocations = async () => {
-      setIsLoading(true);
-      setError(null);
-      
-      try {
-        const data = await fetchAtmLocations();
-        setLocations(data);
-      } catch (err) {
-        console.error("Failed to load ATM locations:", err);
-        setError("Failed to load ATM locations. Please try again later.");
-      } finally {
-        setIsLoading(false);
+    const checkAuth = async () => {
+      const { data } = await supabase.auth.getSession();
+      if (!data.session) {
+        // Redirect to login if not authenticated
+        window.location.href = '/login';
+        return;
       }
+      
+      loadLocations();
     };
     
-    loadLocations();
+    checkAuth();
   }, []);
+  
+  const loadLocations = async () => {
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      const data = await fetchAtmLocations();
+      setLocations(data);
+    } catch (err: any) {
+      console.error("Failed to load ATM locations:", err);
+      setError(err.message || "Failed to load ATM locations. Please try again later.");
+      
+      // Show a toast notification
+      toast({
+        title: "Error loading data",
+        description: err.message || "Failed to load ATM locations",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
   
   const handleBudgetChange = (value: number[]) => {
     setBudget(value[0]);
@@ -274,6 +259,19 @@ const DataInsights = () => {
                   <p className="text-muted-foreground">Loading ATM locations...</p>
                 </div>
               </div>
+            ) : locations.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-64 text-center">
+                <div className="bg-muted rounded-full p-3 mb-3">
+                  <MapPin className="h-6 w-6 text-muted-foreground" />
+                </div>
+                <h3 className="text-lg font-medium mb-1">No analysis data found</h3>
+                <p className="text-muted-foreground max-w-md mb-4">
+                  You haven't saved any ATM location analyses yet. Run some analyses in the Analysis Tool to see them here.
+                </p>
+                <Button onClick={() => window.location.href = '/analysis'}>
+                  Go to Analysis Tool
+                </Button>
+              </div>
             ) : (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {locations.map((location) => (
@@ -283,7 +281,7 @@ const DataInsights = () => {
                         <div>
                           <CardTitle className="flex items-center gap-2">
                             <MapPin className="h-5 w-5 text-primary" />
-                            {location.id}
+                            ATM Location #{location.number}
                           </CardTitle>
                           <CardDescription>
                             {location.location.lat.toFixed(6)}, {location.location.lng.toFixed(6)}
@@ -305,7 +303,6 @@ const DataInsights = () => {
                         <div>
                           <div className="text-sm text-muted-foreground mb-1">Land Rate</div>
                           <div className="font-medium flex items-center gap-1">
-                            
                             {formatCurrency(location.metrics.landRate)}
                           </div>
                         </div>
@@ -338,6 +335,12 @@ const DataInsights = () => {
                           <span className="text-[10px] text-muted-foreground">Traffic</span>
                         </div>
                       </div>
+                      
+                      {location.created_at && (
+                        <div className="mt-3 pt-3 border-t text-xs text-muted-foreground">
+                          Analyzed on {new Date(location.created_at).toLocaleDateString()}
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
                 ))}

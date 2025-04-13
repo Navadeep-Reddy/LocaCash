@@ -90,3 +90,46 @@ def test_supabase():
             "success": False,
             "error": str(e)
         }), 500
+
+@analysis_bp.route('/user-analyses/<user_id>', methods=['GET'])
+def get_user_analyses_endpoint(user_id):
+    """Get all ATM analyses for a specific user"""
+    if not user_id:
+        return jsonify({"error": "User ID is required"}), 400
+    
+    try:
+        result = get_user_analyses(user_id)
+        
+        if isinstance(result, dict) and "error" in result:
+            return jsonify({"success": False, "error": result["error"]}), 500
+        
+        # Transform the data into a format expected by the frontend
+        transformed_data = []
+        for i, analysis in enumerate(result):
+            transformed_data.append({
+                "id": analysis.get('id'),
+                "number": i + 1,  # Auto-number the ATMs
+                "location": {
+                    "lat": analysis.get('location_lat'),
+                    "lng": analysis.get('location_lng')
+                },
+                "metrics": {
+                    "score": analysis.get('overall_score'),
+                    "landRate": 50000 + (i * 10000),  # Placeholder - replace with real land rate data
+                    "populationDensity": analysis.get('population_density'),
+                    "competingATMs": analysis.get('competing_atms'),
+                    "commercialActivity": analysis.get('commercial_activity'),
+                    "trafficFlow": analysis.get('traffic_flow'),
+                    "publicTransport": analysis.get('public_transport')
+                },
+                "isSelected": False,
+                "created_at": analysis.get('created_at'),
+                "is_favorite": analysis.get('is_favorite', False)
+            })
+        
+        return jsonify({"success": True, "data": transformed_data}), 200
+    except Exception as e:
+        import traceback
+        print(f"Error in get_user_analyses_endpoint: {str(e)}")
+        traceback.print_exc()
+        return jsonify({"success": False, "error": str(e)}), 500
