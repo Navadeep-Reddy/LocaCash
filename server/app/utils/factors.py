@@ -71,10 +71,10 @@ def calculate_location_data(lat, lng, radius=1500):
     land_rate = base_rate + (population_density * 200) + (commercial_activity * 100) + (traffic_flow * 50)
 
     result = {
-        "coords": [lat, lng],
+        # Round the coordinates to 3 decimals and remove trailing zeroes
+        "coords": [float(f"{round(lat, 3):.3f}"), float(f"{round(lng, 3):.3f}")],
         "population_density": population_density,
         "competing_atms": competing_atms,
-        #"atm_locations": atm_locations,
         "commercial_activity": commercial_activity,
         "traffic_flow": traffic_flow,
         "public_transport": public_transport,
@@ -84,4 +84,4 @@ def calculate_location_data(lat, lng, radius=1500):
     return result
 
 if __name__ == "__main__": 
-    print(calculate_location_data(13.063961, 80.241677))
+    print(calculate_location_data(13.0639, 80.2416))
