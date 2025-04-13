@@ -35,18 +35,15 @@ const Login = () => {
         console.log("User logged in:", data);
         navigate("/analysis");
       } else {
-        // Create new account
+        // Create new account - simplified to avoid profile creation issues
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
-          options: {
-            emailRedirectTo: `${window.location.origin}/login`,
-          }
         });
 
         if (error) throw error;
         
-        if (data.user?.identities?.length === 0) {
+        if (!data.user || data.user.identities?.length === 0) {
           setError("This email is already registered. Please sign in instead.");
           setMode("login");
         } else {

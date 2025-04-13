@@ -6,6 +6,7 @@ import DataInsights from '@/pages/DataInsights';
 import About from '@/pages/About';
 import Login from '@/pages/Login';
 import { AuthContextProvider } from "./context/AuthContext";
+import { Toaster } from "@/components/ui/toaster";
 
 // Protected route component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -47,6 +48,7 @@ const App = () => {
     <BrowserRouter>
       <AuthContextProvider>
         <AppRoutes />
+        <Toaster />
       </AuthContextProvider>
     </BrowserRouter>
   );

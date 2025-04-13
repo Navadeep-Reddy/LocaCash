@@ -6,6 +6,12 @@ import AnalysisPanel from "@/components/analysis/AnalysisPanel";
 import FactorWeights from "@/components/analysis/FactorWeights";
 import ResultsPanel from "@/components/analysis/ResultsPanel";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { supabase } from '@/lib/supabaseClient';
+import { ATMAnalysisAPI } from '@/lib/api';
+import { toast } from "@/hooks/use-toast";
+import { Save, MapPin } from "lucide-react";
+import { Toaster } from "@/components/ui/toaster";
 
 interface LocationData {
   commercial_activity: number;
@@ -127,6 +133,143 @@ const AnalysisTool = () => {
     setAnalysisComplete(true);
   };
 
+  const saveAnalysisResults = async () => {
+    if (!selectedLocation || !locationData || !scoreResult) return;
+
+    try {
+      // Prepare the analysis data
+      const analysisData = {
+        location_lat: selectedLocation.lat,
+        location_lng: selectedLocation.lng,
+        
+        // Raw factors
+        population_density: locationData.population_density,
+        competing_atms: locationData.competing_atms,
+        commercial_activity: locationData.commercial_activity,
+        traffic_flow: locationData.traffic_flow,
+        public_transport: locationData.public_transport,
+        land_rate: locationData.land_rate,
+        
+        // Scores
+        overall_score: scoreResult.overall_score,
+        population_density_score: scoreResult.factor_scores.population_density.score,
+        competing_atms_score: scoreResult.factor_scores.competing_atms.score,
+        commercial_activity_score: scoreResult.factor_scores.commercial_activity.score,
+        traffic_flow_score: scoreResult.factor_scores.traffic_flow.score,
+        public_transport_score: scoreResult.factor_scores.public_transport.score,
+        land_rate_score: scoreResult.factor_scores.land_rate.score,
+        
+        // Weights
+        population_density_weight: weights.populationDensity,
+        competing_atms_weight: weights.competingATMs,
+        commercial_activity_weight: weights.commercialActivity,
+        traffic_flow_weight: weights.trafficFlow,
+        public_transport_weight: weights.publicTransport,
+        land_rate_weight: weights.landRate,
+        
+        // Recommendations
+        recommendations: scoreResult.recommendations
+      };
+      
+      // Save to database via Flask API
+      const result = await ATMAnalysisAPI.saveAnalysis(analysisData);
+      
+      if (result.success) {
+        toast({
+          title: "Analysis saved",
+          description: "Your analysis has been saved to your history."
+        });
+      } else {
+        toast({
+          title: "Error saving analysis",
+          description: "There was a problem saving your analysis.",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error("Error saving analysis:", error);
+      toast({
+        title: "Error saving analysis",
+        description: "There was a problem saving your analysis.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  // Improved test function
+  const saveTestAnalysis = async () => {
+    try {
+      const { data } = await supabase.auth.getSession();
+      const userId = data.session?.user?.id;
+      
+      if (!userId) {
+        console.error("No user logged in");
+        toast({
+          title: "Authentication Error",
+          description: "Please log in first",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      console.log("Using User ID:", userId);
+      
+      // Simpler test data
+      const testData = {
+        user_id: userId,
+        location_lat: 40.7128,
+        location_lng: -74.0060,
+        population_density: 1000,
+        competing_atms: 5,
+        commercial_activity: 50,
+        traffic_flow: 60,
+        public_transport: 40,
+        land_rate: 70,
+        overall_score: 65,
+        population_density_score: 50,
+        competing_atms_score: 60,
+        commercial_activity_score: 70,
+        traffic_flow_score: 65,
+        public_transport_score: 55,
+        land_rate_score: 75,
+        population_density_weight: 20,
+        competing_atms_weight: 20,
+        commercial_activity_weight: 20,
+        traffic_flow_weight: 15,
+        public_transport_weight: 15,
+        land_rate_weight: 10,
+        recommendations: ["Test recommendation"]
+      };
+      
+      console.log("Sending test data:", testData);
+      
+      // Send to Flask backend
+      const response = await axios.post('http://localhost:8080/analysis/v1/save', testData);
+      
+      console.log("Server response:", response.data);
+      
+      if (response.data.success) {
+        toast({
+          title: "Test Successful",
+          description: "Test analysis saved successfully!",
+        });
+      } else {
+        toast({
+          title: "Save Failed",
+          description: response.data.error || "Unknown error",
+          variant: "destructive"
+        });
+      }
+    } catch (error: any) {
+      console.error("Error in test save:", error);
+      toast({
+        title: "Error",
+        description: error.response?.data?.error || error.message || "Unknown error",
+        variant: "destructive"
+      });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <NavBar />
@@ -180,16 +323,33 @@ const AnalysisTool = () => {
               
               <TabsContent value="results">
                 {analysisReady && scoreResult && selectedLocation && (
-                  <ResultsPanel 
-                    selectedLocation={selectedLocation}
-                    scoreResult={scoreResult}
-                  />
+                  <>
+                    <ResultsPanel 
+                      selectedLocation={selectedLocation}
+                      scoreResult={scoreResult}
+                    />
+                    <div className="mt-4">
+                      <Button 
+                        onClick={saveAnalysisResults} 
+                        className="w-full"
+                      >
+                        <Save className="h-4 w-4 mr-2" />
+                        Save Analysis to My Account
+                      </Button>
+                    </div>
+                  </>
                 )}
               </TabsContent>
             </Tabs>
+            <div className="mt-4">
+              <Button onClick={saveTestAnalysis} variant="outline" size="sm">
+                Test Save
+              </Button>
+            </div>
           </div>
         </div>
       </div>
+      <Toaster />
     </div>
   );
 };
