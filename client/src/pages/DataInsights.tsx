@@ -8,6 +8,22 @@ import { Slider } from "@/components/ui/slider";
 import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/lib/supabaseClient";
 import { toast } from "@/hooks/use-toast";
+// Import Recharts components
+import {
+  BarChart,
+  Bar,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+  Area,
+  ComposedChart,
+  Scatter,
+} from "recharts";
 import { 
   MapPin, 
   DollarSign, 
@@ -106,6 +122,60 @@ const fetchAtmLocations = async (): Promise<ATMLocation[]> => {
     console.error("Error fetching ATM locations:", error);
     throw error;
   }
+};
+
+// Add this function to prepare data for cost-benefit chart
+const prepareCostBenefitData = (selectedLocations: ATMLocation[]) => {
+  // Sort locations by efficiency (best value first)
+  const sortedLocations = [...selectedLocations].sort(
+    (a, b) => 
+      (b.metrics.score / b.metrics.landRate) - 
+      (a.metrics.score / a.metrics.landRate)
+  );
+  
+  // Create accumulating data for the chart
+  const data = [];
+  let accumulatedCost = 0;
+  let accumulatedScore = 0;
+  
+  // Add a zero point for the chart
+  data.push({
+    name: "Start",
+    cost: 0,
+    score: 0,
+    location: "Initial",
+    efficiency: 0
+  });
+  
+  // Add each location's cumulative contribution
+  sortedLocations.forEach((location, index) => {
+    accumulatedCost += location.metrics.landRate;
+    accumulatedScore += location.metrics.score;
+    
+    data.push({
+      name: `ATM ${index + 1}`,
+      cost: accumulatedCost,
+      score: accumulatedScore,
+      location: `Location #${location.number}`,
+      efficiency: (location.metrics.score / location.metrics.landRate) * 10000
+    });
+  });
+  
+  return data;
+};
+
+// Add this formatter for tooltips
+const formatTooltipValue = (value: number, name: string) => {
+  if (name === 'cost') {
+    return [`₹${value.toLocaleString()}`, 'Cumulative Cost'];
+  }
+  if (name === 'score') {
+    return [value, 'Cumulative Score'];
+  }
+  if (name === 'efficiency') {
+    return [`${value.toFixed(1)}`, 'Efficiency'];
+  }
+  return [value, name];
 };
 
 const DataInsights = () => {
@@ -589,9 +659,65 @@ const DataInsights = () => {
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <div className="h-64 flex items-center justify-center bg-muted rounded">
-                      <BarChart3 className="h-16 w-16 text-muted-foreground/50" />
-                      <span className="ml-3 text-sm text-muted-foreground">Chart visualization would appear here</span>
+                    <div className="h-80">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <ComposedChart
+                          data={prepareCostBenefitData(optimizedResult.selectedLocations)}
+                          margin={{ top: 20, right: 30, left: 20, bottom: 30 }}
+                        >
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis 
+                            dataKey="cost" 
+                            tickFormatter={(value) => `₹${(value/1000).toFixed(0)}k`}
+                            label={{ value: 'Cumulative Cost (₹)', position: 'insideBottom', offset: -15 }}
+                          />
+                          <YAxis 
+                            yAxisId="left" 
+                            label={{ value: 'Cumulative Score', angle: -90, position: 'insideLeft' }}
+                          />
+                          <YAxis 
+                            yAxisId="right" 
+                            orientation="right" 
+                            domain={[0, 15]}
+                            label={{ value: 'Efficiency', angle: 90, position: 'insideRight' }}
+                          />
+                          <Tooltip formatter={formatTooltipValue} />
+                          <Legend 
+                            layout="horizontal" 
+                            verticalAlign="top"
+                            align="center"
+                            wrapperStyle={{ 
+                              paddingBottom: 10, 
+                              marginTop: -10
+                            }}
+                            iconType="circle"
+                            iconSize={10}
+                          />
+                          <Area 
+                            type="monotone" 
+                            dataKey="score" 
+                            fill="rgba(37, 99, 235, 0.2)" 
+                            stroke="#2563eb" 
+                            yAxisId="left"
+                            name="Cumulative Score"
+                          />
+                          <Line 
+                            type="monotone" 
+                            dataKey="efficiency" 
+                            stroke="#10b981" 
+                            strokeWidth={2}
+                            yAxisId="right"
+                            name="Efficiency"
+                            dot={{ r: 5 }}
+                          />
+                          <Scatter 
+                            dataKey="score" 
+                            fill="#2563eb" 
+                            yAxisId="left" 
+                            name="Score Points"
+                          />
+                        </ComposedChart>
+                      </ResponsiveContainer>
                     </div>
                     
                     <div className="mt-6 space-y-4">
@@ -619,7 +745,14 @@ const DataInsights = () => {
                             Based on the optimization results, we recommend proceeding with the{' '}
                             {optimizedResult.selectedLocations.length} ATM locations identified, 
                             prioritizing implementation in order of efficiency score. 
-                            Consider increasing your budget allocation for even greater coverage.
+                            {optimizedResult.usedBudget < budget * 0.9 ? (
+                              <span> 
+                                There's still {formatCurrency(budget - optimizedResult.usedBudget)} remaining in your 
+                                budget that could be allocated to maintenance or future expansion.
+                              </span>
+                            ) : (
+                              <span> Consider increasing your budget allocation for even greater coverage.</span>
+                            )}
                           </p>
                         </div>
                       </div>
@@ -631,6 +764,82 @@ const DataInsights = () => {
                       Generate Investment Report
                     </Button>
                   </CardFooter>
+                </Card>
+                
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Budget Allocation by Location</CardTitle>
+                    <CardDescription>
+                      Distribution of your investment across selected locations
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="h-80">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart
+                          data={optimizedResult.selectedLocations.map(location => ({
+                            name: `Location #${location.number}`,
+                            cost: location.metrics.landRate,
+                            score: location.metrics.score
+                          }))}
+                          margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
+                        >
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis 
+                            dataKey="name" 
+                            angle={0} 
+                            textAnchor="middle"
+                            height={40}
+                            tick={{ fontSize: 12 }}
+                            interval={0}
+                          />
+                          <YAxis 
+                            yAxisId="left"
+                            tickFormatter={(value) => `₹${(value/1000).toFixed(0)}k`}
+                            label={{ value: 'Cost (₹)', angle: -90, position: 'insideLeft' }}
+                          />
+                          <YAxis 
+                            yAxisId="right" 
+                            orientation="right"
+                            label={{ value: 'Score', angle: 90, position: 'insideRight' }}
+                          />
+                          <Tooltip 
+                            formatter={(value, name) => {
+                              if (name === 'cost') return [`₹${value.toLocaleString()}`, 'Investment Cost'];
+                              return [value, name];
+                            }}
+                          />
+                          <Legend 
+                            layout="horizontal"
+                            verticalAlign="top"
+                            align="center"
+                            wrapperStyle={{ 
+                              paddingBottom: 10, 
+                              marginTop: -10
+                            }}
+                            iconType="circle" 
+                            iconSize={10}
+                          />
+                          <Bar 
+                            yAxisId="left" 
+                            dataKey="cost" 
+                            name="Investment Cost" 
+                            fill="#3b82f6" 
+                            radius={[4, 4, 0, 0]} 
+                          />
+                          <Line 
+                            yAxisId="right" 
+                            type="monotone" 
+                            dataKey="score" 
+                            name="Viability Score" 
+                            stroke="#10b981" 
+                            strokeWidth={2}
+                            dot={{ r: 4, fill: "#10b981" }}
+                          />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </CardContent>
                 </Card>
               </div>
             )}
